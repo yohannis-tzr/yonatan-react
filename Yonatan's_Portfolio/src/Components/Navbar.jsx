@@ -5,7 +5,7 @@ export default function Navbar() {
         <div className="flex justify-between items-center h-12 sm:h-14 md:h-16"></div>
 
         <div className="flex justify-between items-center h-14 sm:h-16 md:h-20">
-          <div className="flex items-center space-x-1 group cursor-pointer" >
+          <div className="flex items-center space-x-1 group cursor-pointer">
             <div>
               <img
                 src="icon.png"
@@ -20,10 +20,41 @@ export default function Navbar() {
           </div>
           {/* nav links */}
           <div className="flex items-center space-x-6 lg:space-x-8"></div>
-          <a href="#home" className="text-gray-300 hover:text-white text:sm lg:text-base">Home</a>
-
-          
+          <a
+            href="#home"
+            className="text-gray-300 hover:text-white text:sm lg:text-base"
+          >
+            Home
+          </a>
+          <a
+            href="#about"
+            className="text-gray-300 hover:text-white text:sm lg:text-base"
+          >
+            About
+          </a>
+          <a
+            href="#projects"
+            className="text-gray-300 hover:text-white text:sm lg:text-base"
+          >
+            Projects
+          </a>
+          <a
+            href="#skills"
+            className="text-gray-300 hover:text-white text:sm lg:text-base"
+          >
+            Skills
+          </a>
+          <a
+            href="#contact"
+            className="text-gray-300 hover:text-white text:sm lg:text-base"
+          >
+            Contact
+          </a>
         </div>
+
+        <button>
+            
+        </button>
       </div>
     </nav>
   );
