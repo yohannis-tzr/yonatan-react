@@ -1,153 +1,111 @@
-import express from "express";
-import cors from "cors";
-import Database from "better-sqlite3";
-import bcrypt from "bcrypt";
+import { useEffect, useState } from "react";
+import Navbar from "./Navbar";
+import Footer from "./Footer";
 
-const app = express();
-const db = new Database("bookings.db");
+function Admin() {
+  const [bookings, setBookings] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-app.use(cors());
-app.use(express.json());
+  const fetchBookings = () => {
+    setLoading(true);
+    fetch("http://localhost:5000/api/bookings")
+      .then((res) => res.json())
+      .then((data) => {
+        setBookings(data);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  };
 
-/* =========================
-   DATABASE TABLES
-========================= */
+  useEffect(() => {
+    fetchBookings();
+  }, []);
 
-// Users table
-db.prepare(`
-  CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    fullName TEXT,
-    email TEXT UNIQUE,
-    passwordHash TEXT,
-    role TEXT DEFAULT 'user',
-    createdAt TEXT
-  )
-`).run();
+  return (
+    <>
+      {/* Navbar WITHOUT Book a Meeting */}
+      <Navbar showBookButton={false} />
 
-// Bookings table
-db.prepare(`
-  CREATE TABLE IF NOT EXISTS bookings (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    fullName TEXT,
-    email TEXT,
-    phone TEXT,
-    projectSpecification TEXT,
-    selectedDate TEXT,
-    createdAt TEXT
-  )
-`).run();
+      <main className="min-h-screen bg-slate-950 text-white pt-32 px-6">
+        <div className="max-w-7xl mx-auto">
 
-/* =========================
-   TEST ROUTE
-========================= */
+          <div className="flex items-center justify-between mb-6">
+            <h1 className="text-3xl font-bold text-blue-400">
+              Meeting Requests
+            </h1>
 
-app.get("/", (req, res) => {
-  res.send("Backend with auth is running");
-});
+            <button
+              onClick={fetchBookings}
+              className="px-6 py-2 rounded-full bg-blue-500 font-semibold
+                         hover:bg-blue-600 transition"
+            >
+              Refresh Meetings
+            </button>
+          </div>
 
-/* =========================
-   AUTH ROUTES
-========================= */
+          {loading ? (
+            <p className="text-gray-400">Loading meetings...</p>
+          ) : bookings.length === 0 ? (
+            <p className="text-gray-400">No meetings found.</p>
+          ) : (
+            <div className="space-y-5">
+              {bookings.map((booking) => (
+                <div
+                  key={booking.id}
+                  className="flex flex-col md:flex-row gap-6
+                             bg-black/50 border border-white/10 rounded-2xl p-6
+                             hover:border-blue-500/40 transition"
+                >
+                  {/* LEFT */}
+                  <div className="md:w-1/4">
+                    <h2 className="text-xl font-semibold text-blue-400 mb-2">
+                      {booking.fullName}
+                    </h2>
 
-// SIGN UP
-app.post("/api/auth/signup", async (req, res) => {
-  const { fullName, email, password } = req.body;
+                    <a
+                      href={`mailto:${booking.email}`}
+                      className="block text-sm text-blue-400 hover:underline mb-1"
+                    >
+                      {booking.email}
+                    </a>
 
-  if (!email || !password) {
-    return res.status(400).json({ error: "Missing fields" });
-  }
+                    {booking.phone && (
+                      <p className="text-sm text-gray-300">
+                        {booking.phone}
+                      </p>
+                    )}
 
-  try {
-    const hashedPassword = await bcrypt.hash(password, 10);
+                    <p className="text-sm text-gray-300 mt-2">
+                      <span className="text-gray-400">Date:</span>{" "}
+                      {booking.selectedDate}
+                    </p>
+                  </div>
 
-    db.prepare(`
-      INSERT INTO users (fullName, email, passwordHash, createdAt)
-      VALUES (?, ?, ?, ?)
-    `).run(fullName, email, hashedPassword, new Date().toISOString());
+                  {/* RIGHT */}
+                  <div className="md:flex-1 border-t md:border-t-0 md:border-l border-white/10 pt-4 md:pt-0 md:pl-6">
+                    <p className="text-sm text-gray-400 mb-1">
+                      Project Specification
+                    </p>
 
-    res.status(201).json({ success: true });
-  } catch (err) {
-    if (err.code === "SQLITE_CONSTRAINT") {
-      return res.status(409).json({ error: "Email already exists" });
-    }
-    res.status(500).json({ error: "Signup failed" });
-  }
-});
+                    <p className="text-sm text-gray-200 leading-relaxed">
+                      {booking.projectSpecification || "—"}
+                    </p>
 
-// LOGIN
-app.post("/api/auth/login", async (req, res) => {
-  const { email, password } = req.body;
+                    <p className="text-xs text-gray-500 mt-4">
+                      Submitted on{" "}
+                      {new Date(booking.createdAt).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </main>
 
-  const user = db
-    .prepare("SELECT * FROM users WHERE email = ?")
-    .get(email);
+      <Footer />
+    </>
+  );
+}
 
-  if (!user) {
-    return res.status(401).json({ error: "Invalid credentials" });
-  }
-
-  const valid = await bcrypt.compare(password, user.passwordHash);
-
-  if (!valid) {
-    return res.status(401).json({ error: "Invalid credentials" });
-  }
-
-  res.json({
-    success: true,
-    user: {
-      id: user.id,
-      fullName: user.fullName,
-      email: user.email,
-      role: user.role,
-    },
-  });
-});
-
-/* =========================
-   BOOKINGS ROUTES
-========================= */
-
-app.post("/api/bookings", (req, res) => {
-  try {
-    const {
-      fullName,
-      email,
-      phone,
-      projectSpecification,
-      selectedDate,
-    } = req.body;
-
-    db.prepare(`
-      INSERT INTO bookings
-      (fullName, email, phone, projectSpecification, selectedDate, createdAt)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `).run(
-      fullName,
-      email,
-      phone,
-      projectSpecification,
-      selectedDate,
-      new Date().toISOString()
-    );
-
-    res.status(201).json({ success: true });
-  } catch (err) {
-    res.status(500).json({ error: "Failed to save booking" });
-  }
-});
-
-// VIEW BOOKINGS (admin later)
-app.get("/api/bookings", (req, res) => {
-  const rows = db.prepare("SELECT * FROM bookings").all();
-  res.json(rows);
-});
-
-/* =========================
-   START SERVER
-========================= */
-
-const PORT = 5000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+export default Admin;

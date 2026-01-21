@@ -6,7 +6,8 @@ function Admin() {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const fetchBookings = () => {
+    setLoading(true);
     fetch("http://localhost:5000/api/bookings")
       .then((res) => res.json())
       .then((data) => {
@@ -14,6 +15,10 @@ function Admin() {
         setLoading(false);
       })
       .catch(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchBookings();
   }, []);
 
   return (
@@ -24,9 +29,19 @@ function Admin() {
       <main className="min-h-screen bg-slate-950 text-white pt-32 px-6">
         <div className="max-w-7xl mx-auto">
 
-          <h1 className="text-3xl font-bold text-blue-400 mb-8">
-            Meeting Requests
-          </h1>
+          <div className="flex items-center justify-between mb-6">
+            <h1 className="text-3xl font-bold text-blue-400">
+              Meeting Requests
+            </h1>
+
+            <button
+              onClick={fetchBookings}
+              className="px-6 py-2 rounded-full bg-blue-500 font-semibold
+                         hover:bg-blue-600 transition"
+            >
+              Refresh Meetings
+            </button>
+          </div>
 
           {loading ? (
             <p className="text-gray-400">Loading meetings...</p>
@@ -41,7 +56,7 @@ function Admin() {
                              bg-black/50 border border-white/10 rounded-2xl p-6
                              hover:border-blue-500/40 transition"
                 >
-                  {/* LEFT: BASIC INFO */}
+                  {/* LEFT */}
                   <div className="md:w-1/4">
                     <h2 className="text-xl font-semibold text-blue-400 mb-2">
                       {booking.fullName}
@@ -62,11 +77,11 @@ function Admin() {
 
                     <p className="text-sm text-gray-300 mt-2">
                       <span className="text-gray-400">Date:</span>{" "}
-                      {booking.selectedDate || "Not selected"}
+                      {booking.selectedDate}
                     </p>
                   </div>
 
-                  {/* RIGHT: PROJECT DETAILS */}
+                  {/* RIGHT */}
                   <div className="md:flex-1 border-t md:border-t-0 md:border-l border-white/10 pt-4 md:pt-0 md:pl-6">
                     <p className="text-sm text-gray-400 mb-1">
                       Project Specification
