@@ -6,95 +6,96 @@ function Admin() {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchBookings = () => {
+  const fetchBookings = async () => {
     setLoading(true);
-    fetch("http://localhost:5000/api/bookings")
-      .then((res) => res.json())
-      .then((data) => {
-        setBookings(data);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
+    const res = await fetch("http://localhost:5000/api/bookings");
+    const data = await res.json();
+    setBookings(data);
+    setLoading(false);
   };
 
   useEffect(() => {
     fetchBookings();
   }, []);
 
+  const deleteBooking = async (id) => {
+    const confirmed = window.confirm("Delete this booking?");
+    if (!confirmed) return;
+
+    const res = await fetch(
+      `http://localhost:5000/api/bookings/${id}`,
+      { method: "DELETE" }
+    );
+
+    if (!res.ok) {
+      alert("Delete failed");
+      return;
+    }
+
+    // remove from UI immediately
+    setBookings((prev) => prev.filter((b) => b.id !== id));
+  };
+
   return (
     <>
-      {/* Navbar WITHOUT Book a Meeting */}
       <Navbar showBookButton={false} />
 
       <main className="min-h-screen bg-slate-950 text-white pt-32 px-6">
         <div className="max-w-7xl mx-auto">
 
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex justify-between items-center mb-6">
             <h1 className="text-3xl font-bold text-blue-400">
               Meeting Requests
             </h1>
 
             <button
               onClick={fetchBookings}
-              className="px-6 py-2 rounded-full bg-blue-500 font-semibold
-                         hover:bg-blue-600 transition"
+              className="px-6 py-2 bg-blue-500 rounded-full hover:bg-blue-600"
             >
-              Refresh Meetings
+              Refresh
             </button>
           </div>
 
           {loading ? (
-            <p className="text-gray-400">Loading meetings...</p>
+            <p>Loading...</p>
           ) : bookings.length === 0 ? (
-            <p className="text-gray-400">No meetings found.</p>
+            <p>No bookings found.</p>
           ) : (
             <div className="space-y-5">
-              {bookings.map((booking) => (
+              {bookings.map((b) => (
                 <div
-                  key={booking.id}
-                  className="flex flex-col md:flex-row gap-6
-                             bg-black/50 border border-white/10 rounded-2xl p-6
-                             hover:border-blue-500/40 transition"
+                  key={b.id}
+                  className="bg-black/50 border border-white/10 rounded-xl p-6 flex flex-col md:flex-row gap-6"
                 >
-                  {/* LEFT */}
                   <div className="md:w-1/4">
-                    <h2 className="text-xl font-semibold text-blue-400 mb-2">
-                      {booking.fullName}
+                    <h2 className="text-blue-400 font-semibold text-xl">
+                      {b.fullName}
                     </h2>
-
                     <a
-                      href={`mailto:${booking.email}`}
-                      className="block text-sm text-blue-400 hover:underline mb-1"
+                      href={`mailto:${b.email}`}
+                      className="text-blue-400 hover:underline block"
                     >
-                      {booking.email}
+                      {b.email}
                     </a>
-
-                    {booking.phone && (
-                      <p className="text-sm text-gray-300">
-                        {booking.phone}
-                      </p>
-                    )}
-
-                    <p className="text-sm text-gray-300 mt-2">
-                      <span className="text-gray-400">Date:</span>{" "}
-                      {booking.selectedDate}
-                    </p>
+                    {b.phone && <p>{b.phone}</p>}
+                    <p className="mt-2">Date: {b.selectedDate}</p>
                   </div>
 
-                  {/* RIGHT */}
-                  <div className="md:flex-1 border-t md:border-t-0 md:border-l border-white/10 pt-4 md:pt-0 md:pl-6">
-                    <p className="text-sm text-gray-400 mb-1">
-                      Project Specification
-                    </p>
+                  <div className="md:flex-1 border-t md:border-l border-white/10 pt-4 md:pt-0 md:pl-6 flex justify-between">
+                    <div>
+                      <p className="text-gray-400">Project</p>
+                      <p>{b.projectSpecification || "—"}</p>
+                      <p className="text-xs text-gray-500 mt-3">
+                        {new Date(b.createdAt).toLocaleString()}
+                      </p>
+                    </div>
 
-                    <p className="text-sm text-gray-200 leading-relaxed">
-                      {booking.projectSpecification || "—"}
-                    </p>
-
-                    <p className="text-xs text-gray-500 mt-4">
-                      Submitted on{" "}
-                      {new Date(booking.createdAt).toLocaleString()}
-                    </p>
+                    <button
+                      onClick={() => deleteBooking(b.id)}
+                      className="self-start px-4 py-2 bg-red-500 rounded-full hover:bg-red-600"
+                    >
+                      Delete
+                    </button>
                   </div>
                 </div>
               ))}
